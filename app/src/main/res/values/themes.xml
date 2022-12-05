@@ -82,6 +82,8 @@
     </style>
 
     <style name="Widget.MPM.Menu.RoundedCorners">
-        <!-- See styles-v21 as background with rounded corners works since version 21 -->
+        <item name="mpm_paddingBottom">0dp</item>
+        <item name="mpm_paddingTop">0dp</item>
+        <item name="android:popupBackground">@drawable/rounded_popup_background</item>
     </style>
 </resources>

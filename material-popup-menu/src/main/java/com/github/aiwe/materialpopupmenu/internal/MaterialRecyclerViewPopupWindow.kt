@@ -256,9 +256,7 @@ internal class MaterialRecyclerViewPopupWindow(
         dropDownList.background = background
         // Remove background from popup itself to avoid overdraw.
         // This causes issues on Lollipop so we do it on M+ only (see issue #66 on GitHub).
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                popup.setBackgroundDrawable(null)
-//            }
+        popup.setBackgroundDrawable(null)
 
         popup.contentView = dropDownList
 

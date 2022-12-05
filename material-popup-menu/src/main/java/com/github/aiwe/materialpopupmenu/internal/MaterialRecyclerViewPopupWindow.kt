@@ -196,6 +196,8 @@ internal class MaterialRecyclerViewPopupWindow(
             // use outside touchable to dismiss drop down when touching outside of it, so
             // only set this if the dropdown is not always visible
             popup.isOutsideTouchable = true
+            popup.overlapAnchor = false
+
             PopupWindowCompat.showAsDropDown(
                     popup, anchorView!!, dropDownHorizontalOffset,
                     dropDownVerticalOffset, dropDownGravity
@@ -249,16 +251,14 @@ internal class MaterialRecyclerViewPopupWindow(
 
         val background = popup.background
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            dropDownList.clipToOutline = true
-            // Move the background from popup to RecyclerView for clipToOutline to take effect.
-            dropDownList.background = background
-            // Remove background from popup itself to avoid overdraw.
-            // This causes issues on Lollipop so we do it on M+ only (see issue #66 on GitHub).
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        dropDownList.clipToOutline = true
+        // Move the background from popup to RecyclerView for clipToOutline to take effect.
+        dropDownList.background = background
+        // Remove background from popup itself to avoid overdraw.
+        // This causes issues on Lollipop so we do it on M+ only (see issue #66 on GitHub).
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 popup.setBackgroundDrawable(null)
-            }
-        }
+//            }
 
         popup.contentView = dropDownList
 
@@ -277,9 +277,9 @@ internal class MaterialRecyclerViewPopupWindow(
             padding = 0
         }
 
-        if ((dropDownGravity and Gravity.BOTTOM) == Gravity.BOTTOM) {
-            dropDownVerticalOffset += anchorView!!.height
-        }
+//        if ((dropDownGravity and Gravity.BOTTOM) == Gravity.BOTTOM) {
+//            dropDownVerticalOffset += anchorView!!.height
+//        }
 
         // Max height available on the screen for a popupMenu.
         val ignoreBottomDecorations = popup.inputMethodMode == PopupWindow.INPUT_METHOD_NOT_NEEDED

@@ -1,172 +1,58 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'org.jetbrains.dokka-android'
 apply plugin: 'maven-publish'
 
 android {
-    compileSdkVersion ANDROID_COMPILE_SDK_VERSION
-    buildToolsVersion ANDROID_BUILD_TOOLS_VERSION
+    compileSdkVersion 32
     defaultConfig {
-        minSdkVersion ANDROID_MIN_SDK_VERSION
-        targetSdkVersion ANDROID_TARGET_SDK_VERSION
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion 23
+        targetSdkVersion 32
+        versionCode 100
+        versionName "1.0.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
-        debug {}
         release {
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:unchecked"
+    options.deprecation = true
+}
+
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier "sources"
+}
+
+afterEvaluate {
+    publishing {
+        repositories {
+            mavenLocal()
+        }
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId "$environment.group_id"
+                version android.defaultConfig.versionName
+                artifactId project.name
+            }
         }
     }
 }
 
 dependencies {
-    api "androidx.appcompat:appcompat:$ANDROIDX_APPCOMPAT_VERSION"
-    api "androidx.recyclerview:recyclerview:$ANDROIDX_RECYCLERVIEW_VERSION"
-
-    api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$KOTLIN_VERSION"
-
-    testImplementation "junit:junit:$JUNIT_VERSION"
-    testImplementation "org.hamcrest:hamcrest-core:$HAMCREST_VERSION"
-    testImplementation "org.hamcrest:hamcrest-library:$HAMCREST_VERSION"
-    testImplementation "org.hamcrest:hamcrest-integration:$HAMCREST_VERSION"
-    testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:$MOCKITO_KOTLIN_VERSION"
-    testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$KOTLIN_VERSION"
-    testImplementation "org.jetbrains.kotlin:kotlin-stdlib:$KOTLIN_VERSION"
-    testImplementation "org.jetbrains.kotlin:kotlin-reflect:$KOTLIN_VERSION"
-    testImplementation "com.tngtech.archunit:archunit-junit4:$ARCHUNIT_VERSION"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    implementation "androidx.appcompat:appcompat:$versions.android_appcompat"
+    implementation "androidx.recyclerview:recyclerview:$versions.android_recyclerview"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$versions.kotlin"
 }
-
-dokka {
-    outputDirectory = "$rootDir/docs"
-}
-
-task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaAndroidTask) {
-    delete "$buildDir/docs"
-
-    outputFormat = 'javadoc'
-    outputDirectory = "$buildDir/docs"
-
-    externalDocumentationLink {
-        url = new URL("https://developer.android.com/reference/")
-    }
-
-    // Always recreate documentation
-    outputs.upToDateWhen { return false }
-}
-
-afterEvaluate {
-    if (project.hasProperty("javadocJar")) {
-        tasks.javadocJar.dependsOn dokkaJavadoc
-    }
-}
-
-ext {
-    bintrayRepo = 'maven'
-    bintrayName = 'material-popup-menu'
-
-    publishedGroupId = 'com.github.zawadz88.materialpopupmenu'
-    libraryName = 'Material Popup Menu'
-    artifact = 'material-popup-menu'
-
-    libraryDescription = 'Showing Material popup menus programatically made easy'
-
-    siteUrl = 'https://github.com/zawadz88/MaterialPopupMenu'
-    gitUrl = 'https://github.com/zawadz88/MaterialPopupMenu.git'
-
-    libraryVersion = '4.1.0'
-
-    developerId = 'zawadz88'
-    developerName = 'Piotr Zawadzki'
-    developerEmail = 'piotr@zawadzki.dev'
-
-    licenseName = 'The Apache Software License, Version 2.0'
-    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    allLicenses = ["Apache-2.0"]
-}
-
-tasks.withType(Javadoc) {
-    excludes = ['**/*.kt']
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from android.sourceSets.main.java.srcDirs
-}
-
-task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-
-    // Always recreate documentation
-    outputs.upToDateWhen { return false }
-
-    classifier = 'javadoc'
-    from new File("$buildDir/docs")
-}
-
-publishing {
-    publications {
-        MyPublication(MavenPublication) {
-
-            artifact sourcesJar
-            artifact javadocJar
-            artifact("$buildDir/outputs/aar/material-popup-menu-release.aar")
-
-            groupId publishedGroupId
-            artifactId artifact
-
-            pom {
-                packaging 'aar'
-                withXml {
-
-                    asNode().appendNode('name', libraryName)
-
-                    asNode().appendNode('description', libraryDescription)
-
-                    asNode().appendNode('url', siteUrl)
-
-                    // License
-                    def licensesNode = asNode().appendNode('licenses')
-                    def licenseNode = licensesNode.appendNode('license')
-                    licenseNode.appendNode('name', licenseName)
-                    licenseNode.appendNode('url', licenseUrl)
-
-                    // Developer
-                    def developersNode = asNode().appendNode('developers')
-                    def developerNode = developersNode.appendNode('developer')
-                    developerNode.appendNode('id', developerId)
-                    developerNode.appendNode('name', developerName)
-                    developerNode.appendNode('email', developerEmail)
-
-                    // Git
-                    def scmNode = asNode().appendNode('scm')
-                    scmNode.appendNode('connection', gitUrl)
-                    scmNode.appendNode('developerConnection', gitUrl)
-                    scmNode.appendNode('url', siteUrl)
-
-                    def dependenciesNode = asNode().appendNode('dependencies')
-
-                    // Iterate over the implementation dependencies (we don't want the test ones), adding a <dependency> node for each
-                    configurations.implementation.allDependencies.each {
-                        // Ensure dependencies such as fileTree are not included.
-                        if (it.name != 'unspecified') {
-                            def dependencyNode = dependenciesNode.appendNode('dependency')
-                            dependencyNode.appendNode('groupId', it.group)
-                            dependencyNode.appendNode('artifactId', it.name)
-                            dependencyNode.appendNode('version', it.version)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-// Bintray Upload
-apply from: '../gradle/tools/bintrayv1.gradle'
-
-publishToMavenLocal.dependsOn 'assembleRelease'

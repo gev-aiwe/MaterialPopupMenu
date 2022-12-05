@@ -13,3 +13,4 @@ apply plugin: 'org.kordamp.gradle.settings'
 projects {
     layout = 'standard'
 }
+include ':app'

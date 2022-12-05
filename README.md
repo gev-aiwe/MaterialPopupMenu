@@ -185,22 +185,3 @@ E.g. to use the primary color you could define the style like this:
 </resources>
 ```
 
-## Documentation
-HTML documentation of the current version of the library is available [here](https://zawadz88.github.io/MaterialPopupMenu/material-popup-menu/).
-
-## Third Party Bindings
-
-### React Native
-You may now use this library with [React Native](https://github.com/facebook/react-native) via the module [here](https://github.com/prscX/react-native-popover-menu)
-
-## FAQ
-
-### I want to use the library but I don't know Kotlin
-Kotlin is extremely easy to use if you already know Java.
-Check out the [official documentation](https://kotlinlang.org/docs/reference/basic-syntax.html) - it's really great!
-
-### I have not migrated to AndroidX. Can I use this library?
-If you're still using legacy Android Support libraries you can use version 2.2.0. AndroidX is supported by default since 3.0.0.
-
-### Can I use this library on Jelly Bean?
-Up to 3.4.0 minimum supported version was API 16 (Jelly Bean) so you can use that version. Since 4.0.0 minimum supported version is API 19 (Kitkat).

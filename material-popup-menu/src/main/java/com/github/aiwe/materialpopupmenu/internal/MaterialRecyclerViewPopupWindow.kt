@@ -3,9 +3,8 @@ package com.github.aiwe.materialpopupmenu.internal
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Rect
-import android.os.Build
+import android.graphics.drawable.Drawable
 import android.util.Log
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -92,6 +91,8 @@ internal class MaterialRecyclerViewPopupWindow(
     private val tempRect = Rect()
 
     private val popup: PopupWindow
+
+    private var dropDownList: RecyclerView? = null
 
     private val popupMaxWidth: Int
 
@@ -209,6 +210,25 @@ internal class MaterialRecyclerViewPopupWindow(
         }
     }
 
+    internal fun update(adapter: PopupMenuAdapter?) {
+        checkNotNull(anchorView) { "Anchor view must be set!" }
+        this.adapter = adapter
+        dropDownList?.adapter = this.adapter
+        popup.contentView = dropDownList
+        val background = popup.background
+        val widthSpec = dropDownWidth
+        val height = getDropDownHeight(background)
+        if (popup.isShowing) {
+            popup.isOutsideTouchable = true
+
+            popup.update(
+                anchorView, dropDownHorizontalOffset,
+                dropDownVerticalOffset, widthSpec,
+                if (height < 0) -1 else height
+            )
+        }
+    }
+
     /**
      * Dismiss the popupMenu window.
      */
@@ -238,10 +258,8 @@ internal class MaterialRecyclerViewPopupWindow(
      * @return the content's height
      */
     private fun buildDropDown(): Int {
-        var otherHeights = 0
-
-        val dropDownList = View.inflate(context, R.layout.mpm_popup_menu, null) as RecyclerView
-        dropDownList.also {
+        dropDownList = View.inflate(context, R.layout.mpm_popup_menu, null) as RecyclerView
+        dropDownList?.also {
             it.adapter = adapter
             it.layoutManager = LinearLayoutManager(context)
             it.isFocusable = true
@@ -251,15 +269,20 @@ internal class MaterialRecyclerViewPopupWindow(
 
         val background = popup.background
 
-        dropDownList.clipToOutline = true
+        dropDownList?.clipToOutline = true
         // Move the background from popup to RecyclerView for clipToOutline to take effect.
-        dropDownList.background = background
+        dropDownList?.background = background
         // Remove background from popup itself to avoid overdraw.
         // This causes issues on Lollipop so we do it on M+ only (see issue #66 on GitHub).
         popup.setBackgroundDrawable(null)
 
         popup.contentView = dropDownList
 
+        return getDropDownHeight(background)
+    }
+
+    private fun getDropDownHeight(background: Drawable?): Int {
+        var otherHeights = 0
         // getMaxAvailableHeight() subtracts the padding, so we put it back
         // to get the available height for the whole window.
         val padding: Int
@@ -282,13 +305,13 @@ internal class MaterialRecyclerViewPopupWindow(
         // Max height available on the screen for a popupMenu.
         val ignoreBottomDecorations = popup.inputMethodMode == PopupWindow.INPUT_METHOD_NOT_NEEDED
         val maxHeight = getMaxAvailableHeight(
-                anchorView!!, dropDownVerticalOffset,
-                ignoreBottomDecorations
+            anchorView!!, dropDownVerticalOffset,
+            ignoreBottomDecorations
         )
 
         val listContent = measureHeightOfChildrenCompat(maxHeight - otherHeights)
         if (listContent > 0) {
-            val listPadding = dropDownList.paddingTop + dropDownList.paddingBottom
+            val listPadding = (dropDownList?.paddingTop ?: 0) + (dropDownList?.paddingBottom ?: 0)
             otherHeights += padding + listPadding
         }
 

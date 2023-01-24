@@ -26,7 +26,7 @@ class MaterialPopupMenu
 internal constructor(
     @StyleRes internal val style: Int,
     internal val dropdownGravity: Int,
-    internal val sections: List<PopupMenuSection>,
+    internal var sections: List<PopupMenuSection>,
     internal val fixedContentWidthInPx: Int,
     internal val dropDownVerticalOffset: Int?,
     internal val dropDownHorizontalOffset: Int?
@@ -35,6 +35,8 @@ internal constructor(
     private var popupWindow: MaterialRecyclerViewPopupWindow? = null
 
     private var dismissListener: (() -> Unit)? = null
+
+    private var adapter: PopupMenuAdapter? = null
 
     /**
      * Shows a popup menu in the UI.
@@ -54,7 +56,7 @@ internal constructor(
             dropDownVerticalOffset = dropDownVerticalOffset,
             dropDownHorizontalOffset = dropDownHorizontalOffset
         )
-        val adapter = PopupMenuAdapter(sections) { popupWindow.dismiss() }
+        adapter = PopupMenuAdapter(sections) { popupWindow.dismiss() }
 
         popupWindow.adapter = adapter
         popupWindow.anchorView = anchor
@@ -62,6 +64,12 @@ internal constructor(
         popupWindow.show()
         this.popupWindow = popupWindow
         setOnDismissListener(this.dismissListener)
+    }
+
+    fun updateSections(sections: List<MaterialPopupMenuBuilder.SectionHolder>) {
+        this.sections = sections.map { it.convertToPopupMenuSection() }
+        adapter = PopupMenuAdapter(this.sections) { popupWindow?.dismiss() }
+        popupWindow?.update(adapter)
     }
 
     /**

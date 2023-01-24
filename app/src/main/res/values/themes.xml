@@ -13,4 +13,12 @@
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
     </style>
+
+    <style name="Widget.MPM.Menu.CustomBackground">
+        <item name="android:popupBackground">@drawable/popup_menu_background</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">.7</item>
+        <item name="mpm_paddingTop">0dp</item>
+        <item name="mpm_paddingBottom">0dp</item>
+    </style>
 </resources>

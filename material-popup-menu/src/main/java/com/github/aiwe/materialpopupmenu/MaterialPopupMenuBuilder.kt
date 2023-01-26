@@ -17,7 +17,7 @@ import androidx.annotation.StringRes
  * @author Piotr Zawadzki
  */
 @PopupMenuMarker
-class MaterialPopupMenuBuilder {
+class MaterialPopupMenuBuilder(private val needDrawAnchor: Boolean = false) {
 
     /**
      * Style of the popup menu.
@@ -88,7 +88,8 @@ class MaterialPopupMenuBuilder {
             sections = sections,
             fixedContentWidthInPx = fixedContentWidthInPx,
             dropDownVerticalOffset = dropDownVerticalOffset,
-            dropDownHorizontalOffset = dropDownHorizontalOffset
+            dropDownHorizontalOffset = dropDownHorizontalOffset,
+            needDrawAnchor = needDrawAnchor
         )
     }
 
@@ -296,8 +297,8 @@ class MaterialPopupMenuBuilder {
  * Function to create a [MaterialPopupMenuBuilder].
  * @param init block containing popup menu definition
  */
-fun popupMenuBuilder(init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenuBuilder {
-    val popupMenu = MaterialPopupMenuBuilder()
+fun popupMenuBuilder(needDrawAnchor: Boolean = false, init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenuBuilder {
+    val popupMenu = MaterialPopupMenuBuilder(needDrawAnchor)
     popupMenu.init()
     return popupMenu
 }
@@ -306,8 +307,8 @@ fun popupMenuBuilder(init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMe
  * Function to create a [MaterialPopupMenu].
  * @param init block containing popup menu definition
  */
-fun popupMenu(init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenu {
-    return popupMenuBuilder(init).build()
+fun popupMenu(needDrawAnchor: Boolean = false, init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenu {
+    return popupMenuBuilder(needDrawAnchor, init).build()
 }
 
 @DslMarker

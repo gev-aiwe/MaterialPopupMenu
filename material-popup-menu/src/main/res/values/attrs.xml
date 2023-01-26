@@ -17,6 +17,10 @@
 
     <attr name="mpm_paddingTop" format="dimension" />
 
+    <attr name="mpm_spacing_from_anchor" format="dimension" />
+
+    <attr name="mpm_anchor_background" format="reference|color" />
+
     <attr name="materialPopupMenuStyle" format="reference" />
 
     <declare-styleable name="MaterialRecyclerViewPopupWindow">
@@ -28,6 +32,8 @@
         <attr name="mpm_paddingStart" />
         <attr name="mpm_paddingEnd" />
         <attr name="mpm_paddingTop" />
+        <attr name="mpm_spacing_from_anchor"/>
+        <attr name="mpm_anchor_background"/>
     </declare-styleable>
 
 </resources>

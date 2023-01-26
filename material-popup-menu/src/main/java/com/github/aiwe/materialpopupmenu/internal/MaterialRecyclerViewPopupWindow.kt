@@ -2,15 +2,19 @@ package com.github.aiwe.materialpopupmenu.internal
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
-import android.view.WindowManager
+import android.view.*
+import android.view.ViewGroup.LayoutParams
 import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.PopupWindow
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.createAppCompatPopupWindow
+import androidx.core.view.drawToBitmap
 import androidx.core.widget.PopupWindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -27,11 +31,12 @@ import java.lang.reflect.Method
  */
 @SuppressLint("PrivateResource,RestrictedApi")
 internal class MaterialRecyclerViewPopupWindow(
-        private val context: Context,
-        private var dropDownGravity: Int,
-        private val fixedContentWidthInPx: Int,
-        dropDownVerticalOffset: Int?,
-        dropDownHorizontalOffset: Int?
+    private val context: ContextThemeWrapper,
+    private var dropDownGravity: Int,
+    private val fixedContentWidthInPx: Int,
+    private val needDrawAnchor: Boolean,
+    dropDownVerticalOffset: Int?,
+    dropDownHorizontalOffset: Int?
 ) {
 
     @SuppressLint("DiscouragedPrivateApi")
@@ -46,7 +51,7 @@ internal class MaterialRecyclerViewPopupWindow(
         init {
             try {
                 clipToWindowEnabledMethod = PopupWindow::class.java.getDeclaredMethod(
-                        "setClipToScreenEnabled", Boolean::class.javaPrimitiveType
+                    "setClipToScreenEnabled", Boolean::class.javaPrimitiveType
                 )
             } catch (e: NoSuchMethodException) {
                 Log.i(TAG, "Could not find method setClipToScreenEnabled() on PopupWindow. Oh well.")
@@ -54,15 +59,15 @@ internal class MaterialRecyclerViewPopupWindow(
 
             try {
                 getMaxAvailableHeightMethod = PopupWindow::class.java.getDeclaredMethod(
-                        "getMaxAvailableHeight",
-                        View::class.java,
-                        Int::class.javaPrimitiveType,
-                        Boolean::class.javaPrimitiveType
+                    "getMaxAvailableHeight",
+                    View::class.java,
+                    Int::class.javaPrimitiveType,
+                    Boolean::class.javaPrimitiveType
                 )
             } catch (e: NoSuchMethodException) {
                 Log.i(
-                        TAG,
-                        "Could not find method getMaxAvailableHeight(View, int, boolean)" + " on PopupWindow. Oh well."
+                    TAG,
+                    "Could not find method getMaxAvailableHeight(View, int, boolean)" + " on PopupWindow. Oh well."
                 )
             }
         }
@@ -72,6 +77,8 @@ internal class MaterialRecyclerViewPopupWindow(
      * The view that will be used to anchor this popup.
      */
     internal var anchorView: View? = null
+
+    internal val screenHeight = context.baseContext.getScreenHeight()
 
     internal var adapter: PopupMenuAdapter? = null
         set(value) {
@@ -91,6 +98,8 @@ internal class MaterialRecyclerViewPopupWindow(
     private val tempRect = Rect()
 
     private val popup: PopupWindow
+
+    private var dropDownView: LinearLayout? = null
 
     private var dropDownList: RecyclerView? = null
 
@@ -116,6 +125,10 @@ internal class MaterialRecyclerViewPopupWindow(
 
     private val popupPaddingTop: Int
 
+    private val popupSpacingFromAnchor: Int
+
+    private val popupAnchorBackground: Drawable?
+
     init {
         popup = createAppCompatPopupWindow(context)
         popup.inputMethodMode = PopupWindow.INPUT_METHOD_NEEDED
@@ -128,23 +141,25 @@ internal class MaterialRecyclerViewPopupWindow(
         val a = context.obtainStyledAttributes(null, R.styleable.MaterialRecyclerViewPopupWindow)
 
         this.dropDownHorizontalOffset = dropDownHorizontalOffset ?: a.getDimensionPixelOffset(
-                R.styleable.MaterialRecyclerViewPopupWindow_android_dropDownHorizontalOffset,
-                0
+            R.styleable.MaterialRecyclerViewPopupWindow_android_dropDownHorizontalOffset,
+            0
         )
         this.dropDownVerticalOffset = dropDownVerticalOffset ?: a.getDimensionPixelOffset(
-                R.styleable.MaterialRecyclerViewPopupWindow_android_dropDownVerticalOffset,
-                0
+            R.styleable.MaterialRecyclerViewPopupWindow_android_dropDownVerticalOffset,
+            0
         )
         backgroundDimEnabled =
-                a.getBoolean(R.styleable.MaterialRecyclerViewPopupWindow_android_backgroundDimEnabled, false)
+            a.getBoolean(R.styleable.MaterialRecyclerViewPopupWindow_android_backgroundDimEnabled, false)
         backgroundDimAmount = a.getFloat(
-                R.styleable.MaterialRecyclerViewPopupWindow_android_backgroundDimAmount,
-                DEFAULT_BACKGROUND_DIM_AMOUNT
+            R.styleable.MaterialRecyclerViewPopupWindow_android_backgroundDimAmount,
+            DEFAULT_BACKGROUND_DIM_AMOUNT
         )
         popupPaddingBottom = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_paddingBottom, 0)
         popupPaddingStart = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_paddingStart, 0)
         popupPaddingEnd = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_paddingEnd, 0)
         popupPaddingTop = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_paddingTop, 0)
+        popupSpacingFromAnchor = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_spacing_from_anchor, 0)
+        popupAnchorBackground = a.getDrawable(R.styleable.MaterialRecyclerViewPopupWindow_mpm_anchor_background)
 
         a.recycle()
 
@@ -185,9 +200,9 @@ internal class MaterialRecyclerViewPopupWindow(
             popup.isOutsideTouchable = true
 
             popup.update(
-                    anchorView, dropDownHorizontalOffset,
-                    dropDownVerticalOffset, widthSpec,
-                    if (height < 0) -1 else height
+                anchorView, dropDownHorizontalOffset,
+                dropDownVerticalOffset, widthSpec,
+                if (height < 0) -1 else height
             )
         } else {
             popup.width = widthSpec
@@ -200,8 +215,8 @@ internal class MaterialRecyclerViewPopupWindow(
             popup.overlapAnchor = false
 
             PopupWindowCompat.showAsDropDown(
-                    popup, anchorView!!, dropDownHorizontalOffset,
-                    dropDownVerticalOffset, dropDownGravity
+                popup, anchorView!!, dropDownHorizontalOffset,
+                dropDownVerticalOffset, dropDownGravity
             )
         }
 
@@ -214,19 +229,76 @@ internal class MaterialRecyclerViewPopupWindow(
         checkNotNull(anchorView) { "Anchor view must be set!" }
         this.adapter = adapter
         dropDownList?.adapter = this.adapter
-        popup.contentView = dropDownList
         val background = popup.background
-        val widthSpec = dropDownWidth
         val height = getDropDownHeight(background)
+        val newHeight = drawAnchor(height)
+        popup.contentView = dropDownView
+        val widthSpec = dropDownWidth
         if (popup.isShowing) {
             popup.isOutsideTouchable = true
 
             popup.update(
                 anchorView, dropDownHorizontalOffset,
                 dropDownVerticalOffset, widthSpec,
-                if (height < 0) -1 else height
+                if (newHeight < 0) -1 else newHeight
             )
         }
+    }
+
+    internal fun drawAnchor(height: Int): Int {
+        return if (needDrawAnchor) {
+            val childCount = dropDownView?.childCount ?: 0
+            if (childCount > 1) {
+                if (dropDownView?.tag == true) {
+                    dropDownView?.removeViewAt(0)
+                } else if (dropDownView?.tag == false) {
+                    dropDownView?.removeViewAt(childCount - 1)
+                }
+            }
+            val lp = LinearLayout.LayoutParams(anchorView?.layoutParams?.width ?: LayoutParams.WRAP_CONTENT, anchorView?.layoutParams?.height ?: LayoutParams.WRAP_CONTENT)
+            val newParamsOfAnchor = getNewParamsOfAnchor(height)
+            val isAboveAnchor = newParamsOfAnchor.first
+            val newHeight = newParamsOfAnchor.second
+            lp.apply {
+                gravity = dropDownGravity
+            }
+            val anchorBitmap = anchorView!!.drawToBitmap()
+            val topMargin = if (isAboveAnchor) 0 else popupSpacingFromAnchor
+            val bottomMargin = if (isAboveAnchor) popupSpacingFromAnchor else 0
+            lp.bottomMargin = bottomMargin
+            lp.topMargin = topMargin
+            val anchorSnapshot = ImageView(context).apply {
+                layoutParams = lp
+                setImageBitmap(anchorBitmap)
+                background = popupAnchorBackground
+            }
+            val index = if (isAboveAnchor) 0 else -1
+            dropDownView?.addView(anchorSnapshot, index, lp)
+            dropDownView?.tag = isAboveAnchor
+            newHeight
+        } else {
+            height
+        }
+    }
+
+    internal fun getNewParamsOfAnchor(height: Int): Pair<Boolean, Int> {
+        val anchorHeight = anchorView?.layoutParams?.height ?: 0
+        val anchorLocation = IntArray(2)
+        anchorView!!.getLocationOnScreen(anchorLocation)
+        val viewHeight = height + anchorHeight + popupSpacingFromAnchor
+        val offsetToEdge = Point(anchorLocation[1] + anchorHeight + viewHeight, anchorLocation[1] - viewHeight)
+        val maxHeight = ((screenHeight - popupSpacingFromAnchor) / 1.5f).toInt()
+        val isLargeHeight = viewHeight > maxHeight
+        val newHeight = if (isLargeHeight || (offsetToEdge.x > screenHeight && offsetToEdge.y < 0)) {
+            dropDownList?.layoutParams?.apply {
+                this.height = maxHeight - anchorHeight - popupSpacingFromAnchor
+            }
+            maxHeight
+        } else {
+            viewHeight
+        }
+        val isAboveAnchor = offsetToEdge.x in 0..screenHeight
+        return Pair(isAboveAnchor, newHeight)
     }
 
     /**
@@ -258,8 +330,12 @@ internal class MaterialRecyclerViewPopupWindow(
      * @return the content's height
      */
     private fun buildDropDown(): Int {
-        dropDownList = View.inflate(context, R.layout.mpm_popup_menu, null) as RecyclerView
+        dropDownView = LayoutInflater.from(context).inflate(R.layout.mpm_popup_menu, null) as LinearLayout
+        dropDownList = dropDownView?.findViewById(R.id.mpm_rv) as RecyclerView
+        val recylcerViewLp = dropDownList?.layoutParams as? LinearLayout.LayoutParams
+        recylcerViewLp?.gravity = dropDownGravity
         dropDownList?.also {
+            it.layoutParams = recylcerViewLp
             it.adapter = adapter
             it.layoutManager = LinearLayoutManager(context)
             it.isFocusable = true
@@ -276,9 +352,13 @@ internal class MaterialRecyclerViewPopupWindow(
         // This causes issues on Lollipop so we do it on M+ only (see issue #66 on GitHub).
         popup.setBackgroundDrawable(null)
 
-        popup.contentView = dropDownList
+        val height = getDropDownHeight(background)
 
-        return getDropDownHeight(background)
+        val newHeight = drawAnchor(height)
+
+        popup.contentView = dropDownView
+
+        return newHeight
     }
 
     private fun getDropDownHeight(background: Drawable?): Int {
@@ -358,8 +438,8 @@ internal class MaterialRecyclerViewPopupWindow(
 
             heightMeasureSpec = if (childLp.height > 0) {
                 View.MeasureSpec.makeMeasureSpec(
-                        childLp.height,
-                        View.MeasureSpec.EXACTLY
+                    childLp.height,
+                    View.MeasureSpec.EXACTLY
                 )
             } else {
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -390,8 +470,8 @@ internal class MaterialRecyclerViewPopupWindow(
 
     private fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
         return RecyclerView.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
         )
     }
 
@@ -409,13 +489,13 @@ internal class MaterialRecyclerViewPopupWindow(
         getMaxAvailableHeightMethod?.let {
             try {
                 return it.invoke(
-                        popup, anchor, yOffset,
-                        ignoreBottomDecorations
+                    popup, anchor, yOffset,
+                    ignoreBottomDecorations
                 ) as Int
             } catch (e: Exception) {
                 Log.i(
-                        TAG,
-                        "Could not call getMaxAvailableHeightMethod(View, int, boolean)" + " on PopupWindow. Using the public version."
+                    TAG,
+                    "Could not call getMaxAvailableHeightMethod(View, int, boolean)" + " on PopupWindow. Using the public version."
                 )
             }
         }
@@ -461,4 +541,11 @@ internal class MaterialRecyclerViewPopupWindow(
         layoutParams.dimAmount = backgroundDimAmount
         windowManager.updateViewLayout(decorView, layoutParams)
     }
+}
+
+internal fun Context.getScreenHeight(): Int {
+    val windowManager = getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+    val point = Point()
+    windowManager?.defaultDisplay?.getSize(point)
+    return point.y
 }

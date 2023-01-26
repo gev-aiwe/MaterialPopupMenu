@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
         adapter = Adapter { model, itemView ->
             val users = mapOfUsers[model]
             if (!users.isNullOrEmpty()) {
-//                showSimplePopup(users, itemView)
-                showDynamicPopup(users, itemView)
+                showSimplePopup(users, itemView)
+//                showDynamicPopup(users, itemView)
             }
         }
         binding.recyclerView.adapter = adapter
@@ -65,9 +65,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showSimplePopup(users: List<User>, itemView: View) {
-        popupMenu = popupMenu {
+        popupMenu = popupMenu(true) {
             style = R.style.Widget_MPM_Menu_CustomBackground
             dropdownGravity = Gravity.END or Gravity.BOTTOM
+            dropDownVerticalOffset = 0
+            dropDownHorizontalOffset = 0
             section {
                 users.forEach { user ->
                     customItem {
@@ -88,9 +90,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun showDynamicPopup(users: List<User>, itemView: View) {
         handler.removeCallbacks(runnable)
-        popupMenu = popupMenu {
+        popupMenu = popupMenu(needDrawAnchor = true) {
             style = R.style.Widget_MPM_Menu_CustomBackground
             dropdownGravity = Gravity.END or Gravity.BOTTOM
+            dropDownVerticalOffset = 0
+            dropDownHorizontalOffset = 0
             section {
                 customItem {
                     this.layoutResId = R.layout.user_item_rv

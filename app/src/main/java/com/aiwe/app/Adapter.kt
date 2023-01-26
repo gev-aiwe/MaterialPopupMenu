@@ -27,7 +27,7 @@ class Adapter(private val itemCallback: (Model?, View) -> Unit) : RecyclerView.A
         private var item: Model? = null
 
         init {
-            binding.itemMore.setOnClickListener { itemCallback(item, itemView) }
+            binding.itemMore.setOnClickListener { itemCallback(item, binding.itemMore) }
         }
 
         fun bind(item: Model) {

@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
         adapter = Adapter { model, itemView ->
             val users = mapOfUsers[model]
             if (!users.isNullOrEmpty()) {
-                showSimplePopup(users, itemView)
-//                showDynamicPopup(users, itemView)
+//                showSimplePopup(users, itemView)
+                showDynamicPopup(users, itemView)
             }
         }
         binding.recyclerView.adapter = adapter
@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         }
         popupMenu?.show(this, itemView)
         runnable.users = users
-        handler.postDelayed(runnable, 2000L)
+        handler.postDelayed(runnable, 200L)
     }
 
     private fun updateDynamicSections(users: List<User>) {

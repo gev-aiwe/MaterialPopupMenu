@@ -22,5 +22,7 @@
         <item name="mpm_paddingBottom">0dp</item>
         <item name="mpm_spacing_from_anchor">8dp</item>
         <item name="mpm_anchor_background">@drawable/popup_menu_background</item>
+        <item name="mpm_anchor_padding_horizontal">8dp</item>
+        <item name="mpm_anchor_padding_vertical">4dp</item>
     </style>
 </resources>

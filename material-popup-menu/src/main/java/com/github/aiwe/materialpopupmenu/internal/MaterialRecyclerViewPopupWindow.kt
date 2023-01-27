@@ -129,6 +129,10 @@ internal class MaterialRecyclerViewPopupWindow(
 
     private val popupAnchorBackground: Drawable?
 
+    private val anchorHorizontalPadding: Int
+
+    private val anchorVerticalPadding: Int
+
     init {
         popup = createAppCompatPopupWindow(context)
         popup.inputMethodMode = PopupWindow.INPUT_METHOD_NEEDED
@@ -160,6 +164,8 @@ internal class MaterialRecyclerViewPopupWindow(
         popupPaddingTop = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_paddingTop, 0)
         popupSpacingFromAnchor = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_spacing_from_anchor, 0)
         popupAnchorBackground = a.getDrawable(R.styleable.MaterialRecyclerViewPopupWindow_mpm_anchor_background)
+        anchorHorizontalPadding = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_anchor_padding_horizontal, 0)
+        anchorVerticalPadding = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_anchor_padding_vertical, 0)
 
         a.recycle()
 
@@ -255,20 +261,23 @@ internal class MaterialRecyclerViewPopupWindow(
                     dropDownView?.removeViewAt(childCount - 1)
                 }
             }
-            val lp = LinearLayout.LayoutParams(anchorView?.layoutParams?.width ?: LayoutParams.WRAP_CONTENT, anchorView?.layoutParams?.height ?: LayoutParams.WRAP_CONTENT)
-            val newParamsOfAnchor = getNewParamsOfAnchor(height)
-            val isAboveAnchor = newParamsOfAnchor.first
-            val newHeight = newParamsOfAnchor.second
+            val anchorBitmap = anchorView?.drawToBitmap()
+            val lp = LinearLayout.LayoutParams(anchorBitmap?.width ?: LayoutParams.WRAP_CONTENT, anchorBitmap?.height ?: LayoutParams.WRAP_CONTENT)
             lp.apply {
+                this.width += (anchorHorizontalPadding * 2)
+                this.height += (anchorVerticalPadding * 2)
                 gravity = dropDownGravity
             }
-            val anchorBitmap = anchorView!!.drawToBitmap()
+            val newParamsOfAnchor = getNewParamsOfAnchor(height, lp.height)
+            val isAboveAnchor = newParamsOfAnchor.first
+            val newHeight = newParamsOfAnchor.second
             val topMargin = if (isAboveAnchor) 0 else popupSpacingFromAnchor
             val bottomMargin = if (isAboveAnchor) popupSpacingFromAnchor else 0
             lp.bottomMargin = bottomMargin
             lp.topMargin = topMargin
             val anchorSnapshot = ImageView(context).apply {
                 layoutParams = lp
+                setPadding(anchorHorizontalPadding, anchorVerticalPadding, anchorHorizontalPadding, anchorVerticalPadding)
                 setImageBitmap(anchorBitmap)
                 background = popupAnchorBackground
             }
@@ -281,8 +290,7 @@ internal class MaterialRecyclerViewPopupWindow(
         }
     }
 
-    internal fun getNewParamsOfAnchor(height: Int): Pair<Boolean, Int> {
-        val anchorHeight = anchorView?.layoutParams?.height ?: 0
+    internal fun getNewParamsOfAnchor(height: Int, anchorHeight: Int): Pair<Boolean, Int> {
         val anchorLocation = IntArray(2)
         anchorView!!.getLocationOnScreen(anchorLocation)
         val viewHeight = height + anchorHeight + popupSpacingFromAnchor

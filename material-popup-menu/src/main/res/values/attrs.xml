@@ -19,6 +19,10 @@
 
     <attr name="mpm_spacing_from_anchor" format="dimension" />
 
+    <attr name="mpm_anchor_padding_horizontal" format="dimension"/>
+
+    <attr name="mpm_anchor_padding_vertical" format="dimension"/>
+
     <attr name="mpm_anchor_background" format="reference|color" />
 
     <attr name="materialPopupMenuStyle" format="reference" />
@@ -34,6 +38,8 @@
         <attr name="mpm_paddingTop" />
         <attr name="mpm_spacing_from_anchor"/>
         <attr name="mpm_anchor_background"/>
+        <attr name="mpm_anchor_padding_horizontal"/>
+        <attr name="mpm_anchor_padding_vertical"/>
     </declare-styleable>
 
 </resources>

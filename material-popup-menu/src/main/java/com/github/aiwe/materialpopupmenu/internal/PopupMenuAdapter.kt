@@ -2,6 +2,8 @@ package com.github.aiwe.materialpopupmenu.internal
 
 import android.annotation.SuppressLint
 import android.content.res.ColorStateList
+import android.os.Build
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +22,7 @@ import com.github.aiwe.materialpopupmenu.R
 @SuppressLint("RestrictedApi")
 internal class PopupMenuAdapter(
     private val sections: List<MaterialPopupMenu.PopupMenuSection>,
+    private val hapticFeedbackEnabled: Boolean = false,
     private val dismissPopupCallback: () -> Unit
 ) : SectionedRecyclerViewAdapter<PopupMenuAdapter.SectionHeaderViewHolder, PopupMenuAdapter.AbstractItemViewHolder>() {
 
@@ -72,6 +75,13 @@ internal class PopupMenuAdapter(
         val popupMenuItem = sections[section].items[position]
         holder.bindItem(popupMenuItem)
         holder.itemView.setOnClickListener {
+            if (hapticFeedbackEnabled) {
+                it.performHapticFeedback(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        HapticFeedbackConstants.CONFIRM
+                    } else HapticFeedbackConstants.KEYBOARD_TAP
+                )
+            }
             popupMenuItem.callback()
             if (popupMenuItem.dismissOnSelect) {
                 dismissPopupCallback()

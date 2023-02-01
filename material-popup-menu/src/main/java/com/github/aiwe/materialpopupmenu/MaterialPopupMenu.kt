@@ -3,12 +3,7 @@ package com.github.aiwe.materialpopupmenu
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.view.View
-import androidx.annotation.ColorInt
-import androidx.annotation.DrawableRes
-import androidx.annotation.LayoutRes
-import androidx.annotation.StringRes
-import androidx.annotation.StyleRes
-import androidx.annotation.UiThread
+import androidx.annotation.*
 import androidx.appcompat.view.ContextThemeWrapper
 import com.github.aiwe.materialpopupmenu.internal.MaterialRecyclerViewPopupWindow
 import com.github.aiwe.materialpopupmenu.internal.PopupMenuAdapter
@@ -58,7 +53,7 @@ internal constructor(
             dropDownVerticalOffset = dropDownVerticalOffset,
             dropDownHorizontalOffset = dropDownHorizontalOffset
         )
-        adapter = PopupMenuAdapter(sections) { popupWindow.dismiss() }
+        adapter = PopupMenuAdapter(sections, popupWindow.hapticFeedbackEnabled) { popupWindow.dismiss() }
 
         popupWindow.adapter = adapter
         popupWindow.anchorView = anchor
@@ -70,7 +65,8 @@ internal constructor(
 
     fun updateSections(sections: List<MaterialPopupMenuBuilder.SectionHolder>) {
         this.sections = sections.map { it.convertToPopupMenuSection() }
-        adapter = PopupMenuAdapter(this.sections) { popupWindow?.dismiss() }
+        val hapticFeedbackEnabled = popupWindow?.hapticFeedbackEnabled ?: false
+        adapter = PopupMenuAdapter(this.sections, hapticFeedbackEnabled) { popupWindow?.dismiss() }
         popupWindow?.update(adapter)
     }
 

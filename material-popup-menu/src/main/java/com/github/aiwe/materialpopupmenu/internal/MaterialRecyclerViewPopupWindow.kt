@@ -133,6 +133,8 @@ internal class MaterialRecyclerViewPopupWindow(
 
     private val anchorVerticalPadding: Int
 
+    val hapticFeedbackEnabled: Boolean
+
     init {
         popup = createAppCompatPopupWindow(context)
         popup.inputMethodMode = PopupWindow.INPUT_METHOD_NEEDED
@@ -166,6 +168,7 @@ internal class MaterialRecyclerViewPopupWindow(
         popupAnchorBackground = a.getDrawable(R.styleable.MaterialRecyclerViewPopupWindow_mpm_anchor_background)
         anchorHorizontalPadding = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_anchor_padding_horizontal, 0)
         anchorVerticalPadding = a.getDimensionPixelSize(R.styleable.MaterialRecyclerViewPopupWindow_mpm_anchor_padding_vertical, 0)
+        hapticFeedbackEnabled = a.getBoolean(R.styleable.MaterialRecyclerViewPopupWindow_android_hapticFeedbackEnabled, false)
 
         a.recycle()
 

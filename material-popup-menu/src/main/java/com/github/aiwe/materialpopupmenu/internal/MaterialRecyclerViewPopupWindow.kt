@@ -16,9 +16,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.createAppCompatPopupWindow
-import androidx.core.view.drawToBitmap
-import androidx.core.view.get
-import androidx.core.view.isVisible
+import androidx.core.view.*
 import androidx.core.widget.PopupWindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -168,6 +166,18 @@ internal class MaterialRecyclerViewPopupWindow(
     private val anchorVerticalPadding: Int
 
     val hapticFeedbackEnabled: Boolean
+
+    private val additionalHeight: Int
+    get() {
+        val h = additionalView?.let {
+            if (it.layoutParams.height <= 0) {
+                it.measuredHeight
+            } else {
+                it.layoutParams.height
+            }
+        } ?: 0
+        return h + (additionalView?.marginBottom ?: 0) + (additionalView?.marginTop ?: 0)
+    }
 
     init {
         popup = createAppCompatPopupWindow(context)
@@ -347,11 +357,10 @@ internal class MaterialRecyclerViewPopupWindow(
         val offsetToEdge = Point(anchorLocation[1] + anchorHeight + viewHeight, anchorLocation[1] - viewHeight)
         val maxHeight = ((screenHeight - popupSpacingFromAnchor) / 1.5f).toInt()
         val isLargeHeight = viewHeight > maxHeight
-        val additionalViewHeight = additionalView?.measuredHeight ?: 0
         val newHeight = if (isLargeHeight || (offsetToEdge.x > screenHeight && offsetToEdge.y < 0)) {
             dropDownList?.layoutParams?.apply {
-                val withMaxHeight = maxHeight - anchorHeight - popupSpacingFromAnchor - additionalViewHeight
-                val listHeight = height - additionalViewHeight
+                val withMaxHeight = maxHeight - anchorHeight - popupSpacingFromAnchor - additionalHeight
+                val listHeight = height - additionalHeight
                 this.height = min(withMaxHeight, listHeight)
             }
             maxHeight
@@ -462,7 +471,7 @@ internal class MaterialRecyclerViewPopupWindow(
         val listContent = measureHeightOfChildrenCompat(maxHeight - otherHeights)
         if (listContent > 0) {
             val listPadding = (dropDownList?.paddingTop ?: 0) + (dropDownList?.paddingBottom ?: 0)
-            otherHeights += padding + listPadding + (additionalView?.measuredHeight ?: 0)
+            otherHeights += padding + listPadding + additionalHeight
         }
 
         return listContent + otherHeights

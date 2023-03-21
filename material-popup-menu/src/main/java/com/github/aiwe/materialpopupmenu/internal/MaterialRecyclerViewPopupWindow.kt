@@ -7,6 +7,8 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.Log
 import android.view.*
+import android.view.View.MeasureSpec
+import android.view.View.OnTouchListener
 import android.view.ViewGroup.LayoutParams
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -15,11 +17,14 @@ import android.widget.PopupWindow
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.createAppCompatPopupWindow
 import androidx.core.view.drawToBitmap
+import androidx.core.view.get
+import androidx.core.view.isVisible
 import androidx.core.widget.PopupWindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.github.aiwe.materialpopupmenu.R
 import java.lang.reflect.Method
+import kotlin.math.min
 
 /**
  * A more Material version of [androidx.appcompat.widget.ListPopupWindow] based on [RecyclerView].
@@ -78,6 +83,10 @@ internal class MaterialRecyclerViewPopupWindow(
      */
     internal var anchorView: View? = null
 
+    internal var additionalView: View? = null
+
+    internal var touchOutsideListener: (() -> Unit)? = null
+
     internal val screenHeight = context.baseContext.getScreenHeight()
 
     internal var adapter: PopupMenuAdapter? = null
@@ -88,6 +97,31 @@ internal class MaterialRecyclerViewPopupWindow(
             }
             field = value
         }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private val popupOutsideListener = OnTouchListener { v, event ->
+        val x = event.x.toInt()
+        val y = event.y.toInt()
+        return@OnTouchListener if (event.action == MotionEvent.ACTION_DOWN
+            && (x < 0 || x >= v.width || y < 0 || y >= v.height)
+        ) {
+            if (touchOutsideListener == null) {
+                v.onTouchEvent(event)
+            } else {
+                touchOutsideListener?.invoke()
+                true
+            }
+        } else if (event.action == MotionEvent.ACTION_OUTSIDE) {
+            if (touchOutsideListener == null) {
+                v.onTouchEvent(event)
+            } else {
+                touchOutsideListener?.invoke()
+                true
+            }
+        } else {
+            v.onTouchEvent(event)
+        }
+    }
 
     private var dropDownWidth = ViewGroup.LayoutParams.WRAP_CONTENT
 
@@ -229,6 +263,8 @@ internal class MaterialRecyclerViewPopupWindow(
             )
         }
 
+        popup.setTouchInterceptor(popupOutsideListener)
+
         if (backgroundDimEnabled) {
             addBackgroundDimming()
         }
@@ -254,15 +290,26 @@ internal class MaterialRecyclerViewPopupWindow(
         }
     }
 
+    internal fun setVisibility(visibilityParams: VisibilityParams, visible: Boolean) {
+        when (visibilityParams) {
+            VisibilityParams.ADDITIONAL_VIEW -> additionalView?.isVisible = visible
+            VisibilityParams.ANCHOR -> {
+                val childCount = dropDownView?.childCount ?: 0
+                if (childCount > 2) {
+                    val index = if (dropDownView?.tag == true) 1 else childCount - 1
+                    dropDownView?.get(index)?.isVisible = visible
+                }
+            }
+            else -> dropDownList?.isVisible = visible
+        }
+    }
+
     internal fun drawAnchor(height: Int): Int {
         return if (needDrawAnchor) {
             val childCount = dropDownView?.childCount ?: 0
-            if (childCount > 1) {
-                if (dropDownView?.tag == true) {
-                    dropDownView?.removeViewAt(0)
-                } else if (dropDownView?.tag == false) {
-                    dropDownView?.removeViewAt(childCount - 1)
-                }
+            if (childCount > 2) {
+                val index = if (dropDownView?.tag == true) 1 else childCount - 1
+                dropDownView?.removeViewAt(index)
             }
             val anchorBitmap = anchorView?.drawToBitmap()
             val lp = LinearLayout.LayoutParams(anchorBitmap?.width ?: LayoutParams.WRAP_CONTENT, anchorBitmap?.height ?: LayoutParams.WRAP_CONTENT)
@@ -284,7 +331,7 @@ internal class MaterialRecyclerViewPopupWindow(
                 setImageBitmap(anchorBitmap)
                 background = popupAnchorBackground
             }
-            val index = if (isAboveAnchor) 0 else -1
+            val index = if (isAboveAnchor) 1 else -1
             dropDownView?.addView(anchorSnapshot, index, lp)
             dropDownView?.tag = isAboveAnchor
             newHeight
@@ -300,9 +347,12 @@ internal class MaterialRecyclerViewPopupWindow(
         val offsetToEdge = Point(anchorLocation[1] + anchorHeight + viewHeight, anchorLocation[1] - viewHeight)
         val maxHeight = ((screenHeight - popupSpacingFromAnchor) / 1.5f).toInt()
         val isLargeHeight = viewHeight > maxHeight
+        val additionalViewHeight = additionalView?.measuredHeight ?: 0
         val newHeight = if (isLargeHeight || (offsetToEdge.x > screenHeight && offsetToEdge.y < 0)) {
             dropDownList?.layoutParams?.apply {
-                this.height = maxHeight - anchorHeight - popupSpacingFromAnchor
+                val withMaxHeight = maxHeight - anchorHeight - popupSpacingFromAnchor - additionalViewHeight
+                val listHeight = height - additionalViewHeight
+                this.height = min(withMaxHeight, listHeight)
             }
             maxHeight
         } else {
@@ -343,6 +393,14 @@ internal class MaterialRecyclerViewPopupWindow(
     private fun buildDropDown(): Int {
         dropDownView = LayoutInflater.from(context).inflate(R.layout.mpm_popup_menu, null) as LinearLayout
         dropDownList = dropDownView?.findViewById(R.id.mpm_rv) as RecyclerView
+        additionalView?.let {
+            dropDownView?.findViewById<FrameLayout>(R.id.mpm_add_view)?.apply {
+                this.removeAllViews()
+                (it.parent as? ViewGroup)?.removeAllViews()
+                addView(additionalView)
+                (this.layoutParams as LinearLayout.LayoutParams).gravity = dropDownGravity
+            }
+        }
         val recylcerViewLp = dropDownList?.layoutParams as? LinearLayout.LayoutParams
         recylcerViewLp?.gravity = dropDownGravity
         dropDownList?.also {
@@ -373,6 +431,7 @@ internal class MaterialRecyclerViewPopupWindow(
     }
 
     private fun getDropDownHeight(background: Drawable?): Int {
+        additionalView?.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
         var otherHeights = 0
         // getMaxAvailableHeight() subtracts the padding, so we put it back
         // to get the available height for the whole window.
@@ -403,7 +462,7 @@ internal class MaterialRecyclerViewPopupWindow(
         val listContent = measureHeightOfChildrenCompat(maxHeight - otherHeights)
         if (listContent > 0) {
             val listPadding = (dropDownList?.paddingTop ?: 0) + (dropDownList?.paddingBottom ?: 0)
-            otherHeights += padding + listPadding
+            otherHeights += padding + listPadding + (additionalView?.measuredHeight ?: 0)
         }
 
         return listContent + otherHeights

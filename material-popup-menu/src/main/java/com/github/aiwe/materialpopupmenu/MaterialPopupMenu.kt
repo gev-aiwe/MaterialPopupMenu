@@ -7,6 +7,7 @@ import androidx.annotation.*
 import androidx.appcompat.view.ContextThemeWrapper
 import com.github.aiwe.materialpopupmenu.internal.MaterialRecyclerViewPopupWindow
 import com.github.aiwe.materialpopupmenu.internal.PopupMenuAdapter
+import com.github.aiwe.materialpopupmenu.internal.VisibilityParams
 
 /**
  * Holds all the required information for showing a popup menu.
@@ -42,7 +43,11 @@ internal constructor(
      * @param anchor view used to anchor the popup
      */
     @UiThread
-    fun show(context: Context, anchor: View) {
+    fun show(
+        context: Context,
+        anchor: View,
+        additionalView: View? = null
+    ) {
         val style = resolvePopupStyle(context)
         val styledContext = ContextThemeWrapper(context, style)
         val popupWindow = MaterialRecyclerViewPopupWindow(
@@ -53,6 +58,7 @@ internal constructor(
             dropDownVerticalOffset = dropDownVerticalOffset,
             dropDownHorizontalOffset = dropDownHorizontalOffset
         )
+        popupWindow.additionalView = additionalView
         adapter = PopupMenuAdapter(sections, popupWindow.hapticFeedbackEnabled) { popupWindow.dismiss() }
 
         popupWindow.adapter = adapter
@@ -68,6 +74,22 @@ internal constructor(
         val hapticFeedbackEnabled = popupWindow?.hapticFeedbackEnabled ?: false
         adapter = PopupMenuAdapter(this.sections, hapticFeedbackEnabled) { popupWindow?.dismiss() }
         popupWindow?.update(adapter)
+    }
+
+    fun setVisibleAnchor(visible: Boolean) {
+        popupWindow?.setVisibility(VisibilityParams.ANCHOR, visible)
+    }
+
+    fun setVisibleMenu(visible: Boolean) {
+        popupWindow?.setVisibility(VisibilityParams.MENU, visible)
+    }
+
+    fun setVisibleAdditionalView(visible: Boolean) {
+        popupWindow?.setVisibility(VisibilityParams.ADDITIONAL_VIEW, visible)
+    }
+
+    fun setTouchOutsideListener(touchOutsideListener: (() -> Unit)?) {
+        popupWindow?.touchOutsideListener = touchOutsideListener
     }
 
     /**

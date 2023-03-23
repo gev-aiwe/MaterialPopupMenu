@@ -46,7 +46,7 @@ internal constructor(
     fun show(
         context: Context,
         anchor: View,
-        additionalView: View? = null
+        additionalViewModel: AdditionalViewModel? = null
     ) {
         val style = resolvePopupStyle(context)
         val styledContext = ContextThemeWrapper(context, style)
@@ -58,7 +58,7 @@ internal constructor(
             dropDownVerticalOffset = dropDownVerticalOffset,
             dropDownHorizontalOffset = dropDownHorizontalOffset
         )
-        popupWindow.additionalView = additionalView
+        popupWindow.additionalViewModel = additionalViewModel
         adapter = PopupMenuAdapter(sections, popupWindow.hapticFeedbackEnabled) { popupWindow.dismiss() }
 
         popupWindow.adapter = adapter
@@ -121,6 +121,8 @@ internal constructor(
 
         return resolvedStyle
     }
+
+    data class AdditionalViewModel(val additionalView: View, val maxHeight: Int)
 
     internal data class PopupMenuSection(
         val title: CharSequence?,

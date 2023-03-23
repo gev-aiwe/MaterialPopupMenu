@@ -20,8 +20,10 @@ import androidx.core.view.*
 import androidx.core.widget.PopupWindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.github.aiwe.materialpopupmenu.MaterialPopupMenu
 import com.github.aiwe.materialpopupmenu.R
 import java.lang.reflect.Method
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -81,7 +83,7 @@ internal class MaterialRecyclerViewPopupWindow(
      */
     internal var anchorView: View? = null
 
-    internal var additionalView: View? = null
+    internal var additionalViewModel: MaterialPopupMenu.AdditionalViewModel? = null
 
     internal var touchOutsideListener: (() -> Unit)? = null
 
@@ -117,7 +119,7 @@ internal class MaterialRecyclerViewPopupWindow(
                 true
             }
         } else {
-            v.onTouchEvent(event)
+            checkTouchOutSide(v, event)
         }
     }
 
@@ -167,17 +169,23 @@ internal class MaterialRecyclerViewPopupWindow(
 
     val hapticFeedbackEnabled: Boolean
 
+    private val additionalView: View?
+        get() = additionalViewModel?.additionalView
+
     private val additionalHeight: Int
-    get() {
-        val h = additionalView?.let {
-            if (it.layoutParams.height <= 0) {
-                it.measuredHeight
-            } else {
-                it.layoutParams.height
-            }
-        } ?: 0
-        return h + (additionalView?.marginBottom ?: 0) + (additionalView?.marginTop ?: 0)
-    }
+        get() {
+            val h = additionalView?.let {
+                if (it.layoutParams.height <= 0) {
+                    it.measuredHeight
+                } else {
+                    it.layoutParams.height
+                }
+            } ?: 0
+            return h + (additionalView?.marginBottom ?: 0) + (additionalView?.marginTop ?: 0)
+        }
+
+    private val additionalMaxHeight: Int
+        get() = additionalViewModel?.maxHeight ?: additionalHeight
 
     init {
         popup = createAppCompatPopupWindow(context)
@@ -474,7 +482,7 @@ internal class MaterialRecyclerViewPopupWindow(
             otherHeights += padding + listPadding + additionalHeight
         }
 
-        return listContent + otherHeights
+        return max(listContent + otherHeights, additionalMaxHeight)
     }
 
     /**
@@ -619,6 +627,27 @@ internal class MaterialRecyclerViewPopupWindow(
         layoutParams.flags = WindowManager.LayoutParams.FLAG_DIM_BEHIND
         layoutParams.dimAmount = backgroundDimAmount
         windowManager.updateViewLayout(decorView, layoutParams)
+    }
+
+    private fun checkTouchOutSide(v: View, event: MotionEvent): Boolean {
+        return if (event.action == MotionEvent.ACTION_DOWN) {
+            val x = event.x.toInt()
+            val y = event.y.toInt()
+            var touchInsideView = false
+            dropDownView?.children?.forEachIndexed { index, view ->
+                if (view.isVisible && x in view.left..view.right && y in view.top..view.bottom) {
+                    touchInsideView = true
+                }
+            }
+            if (touchInsideView) {
+                v.onTouchEvent(event)
+            } else {
+                touchOutsideListener?.invoke() ?: dismiss()
+                true
+            }
+        } else {
+            v.onTouchEvent(event)
+        }
     }
 }
 

@@ -17,7 +17,8 @@ import androidx.annotation.StringRes
  * @author Piotr Zawadzki
  */
 @PopupMenuMarker
-class MaterialPopupMenuBuilder(private val needDrawAnchor: Boolean = false) {
+class MaterialPopupMenuBuilder(private val needDrawAnchor: Boolean = false,
+                               private val ignoreMaxHeight: Boolean = false) {
 
     /**
      * Style of the popup menu.
@@ -89,7 +90,8 @@ class MaterialPopupMenuBuilder(private val needDrawAnchor: Boolean = false) {
             fixedContentWidthInPx = fixedContentWidthInPx,
             dropDownVerticalOffset = dropDownVerticalOffset,
             dropDownHorizontalOffset = dropDownHorizontalOffset,
-            needDrawAnchor = needDrawAnchor
+            needDrawAnchor = needDrawAnchor,
+            ignoreMaxHeight = ignoreMaxHeight
         )
     }
 
@@ -297,8 +299,10 @@ class MaterialPopupMenuBuilder(private val needDrawAnchor: Boolean = false) {
  * Function to create a [MaterialPopupMenuBuilder].
  * @param init block containing popup menu definition
  */
-fun popupMenuBuilder(needDrawAnchor: Boolean = false, init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenuBuilder {
-    val popupMenu = MaterialPopupMenuBuilder(needDrawAnchor)
+fun popupMenuBuilder(needDrawAnchor: Boolean = false,
+                     ignoreMaxHeight: Boolean = false,
+                     init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenuBuilder {
+    val popupMenu = MaterialPopupMenuBuilder(needDrawAnchor, ignoreMaxHeight)
     popupMenu.init()
     return popupMenu
 }
@@ -307,8 +311,10 @@ fun popupMenuBuilder(needDrawAnchor: Boolean = false, init: MaterialPopupMenuBui
  * Function to create a [MaterialPopupMenu].
  * @param init block containing popup menu definition
  */
-fun popupMenu(needDrawAnchor: Boolean = false, init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenu {
-    return popupMenuBuilder(needDrawAnchor, init).build()
+fun popupMenu(needDrawAnchor: Boolean = false,
+              ignoreMaxHeight: Boolean = false,
+              init: MaterialPopupMenuBuilder.() -> Unit): MaterialPopupMenu {
+    return popupMenuBuilder(needDrawAnchor, ignoreMaxHeight, init).build()
 }
 
 @DslMarker

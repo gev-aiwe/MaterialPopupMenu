@@ -27,6 +27,7 @@ internal constructor(
     internal val dropDownVerticalOffset: Int?,
     internal val dropDownHorizontalOffset: Int?,
     internal val needDrawAnchor: Boolean = false,
+    internal val ignoreMaxHeight: Boolean = false,
 ) {
 
     private var popupWindow: MaterialRecyclerViewPopupWindow? = null
@@ -55,6 +56,7 @@ internal constructor(
             dropDownGravity = dropdownGravity,
             fixedContentWidthInPx = fixedContentWidthInPx,
             needDrawAnchor = needDrawAnchor,
+            ignoreMaxHeight = ignoreMaxHeight,
             dropDownVerticalOffset = dropDownVerticalOffset,
             dropDownHorizontalOffset = dropDownHorizontalOffset
         )

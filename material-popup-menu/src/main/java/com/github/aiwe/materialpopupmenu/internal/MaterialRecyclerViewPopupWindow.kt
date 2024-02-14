@@ -40,6 +40,7 @@ internal class MaterialRecyclerViewPopupWindow(
     private var dropDownGravity: Int,
     private val fixedContentWidthInPx: Int,
     private val needDrawAnchor: Boolean,
+    private val ignoreMaxHeight: Boolean,
     dropDownVerticalOffset: Int?,
     dropDownHorizontalOffset: Int?
 ) {
@@ -363,7 +364,8 @@ internal class MaterialRecyclerViewPopupWindow(
         anchorView!!.getLocationOnScreen(anchorLocation)
         val viewHeight = height + anchorHeight + popupSpacingFromAnchor
         val offsetToEdge = Point(anchorLocation[1] + anchorHeight + viewHeight, anchorLocation[1] - viewHeight)
-        val maxHeight = ((screenHeight - popupSpacingFromAnchor) / 1.5f).toInt()
+        val divider = if (ignoreMaxHeight) 1f else 1.5f
+        val maxHeight = ((screenHeight - popupSpacingFromAnchor) / divider).toInt()
         val isLargeHeight = viewHeight > maxHeight
         val newHeight = if (isLargeHeight || (offsetToEdge.x > screenHeight && offsetToEdge.y < 0)) {
             dropDownList?.layoutParams?.apply {
@@ -371,7 +373,7 @@ internal class MaterialRecyclerViewPopupWindow(
                 val listHeight = height - additionalHeight
                 this.height = min(withMaxHeight, listHeight)
             }
-            maxHeight
+            if (ignoreMaxHeight) viewHeight else maxHeight
         } else {
             viewHeight
         }
@@ -543,7 +545,7 @@ internal class MaterialRecyclerViewPopupWindow(
 
             returnedHeight += itemView.measuredHeight + verticalMargin
 
-            if (returnedHeight >= maxHeight) {
+            if (returnedHeight >= maxHeight && !ignoreMaxHeight) {
                 // We went over, figure out which height to return.  If returnedHeight >
                 // maxHeight, then the i'th position did not fit completely.
                 return maxHeight
